@@ -26,6 +26,7 @@ import numpy as np
 from arkane.gaussian import GaussianLog
 from arkane.molpro import MolproLog
 from arkane.qchem import QChemLog
+from arkane.orca import OrcaLog
 from arkane.util import determine_qm_software
 from rmgpy.molecule.element import get_element
 from rmgpy.qm.qmdata import QMData
@@ -481,7 +482,9 @@ def determine_ess(log_file):
         return 'qchem'
     if isinstance(log, MolproLog):
         return 'molpro'
-    raise InputError('Could not identify the log file in {0} as belonging to Gaussian, QChem, or Molpro.')
+    if isinstance(log, OrcaLog):
+        return 'orca'
+    raise InputError('Could not identify the log file in {0} as belonging to Gaussian, QChem, Molpro, or Orca.')
 
 
 def calculate_dihedral_angle(coords, torsion):
