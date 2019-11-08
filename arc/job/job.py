@@ -100,6 +100,7 @@ class Job(object):
         conformers (str): A path to the YAML file conformer coordinates for a Gromacs MD job.
         is_ts (bool): Whether this species represents a transition structure.
         level_of_theory (str): Level of theory, e.g. 'CBS-QB3', 'CCSD(T)-F12a/aug-cc-pVTZ', 'B3LYP/6-311++G(3df,3pd)'...
+                               General format: method/basis auxiliary_basis
         job_type (str): The job's type.
         scan (list): A list representing atom labels for the dihedral scan (e.g., [2, 1, 3, 5]).
         pivots (list): The rotor scan pivots, if the job type is scan. Not used directly in these methods,
@@ -121,6 +122,7 @@ class Job(object):
         total_job_memory_gb (int): The total memory ARC specifies for a job in GB.
         method (str): The calculation method (e.g., 'B3LYP', 'CCSD(T)', 'CBS-QB3'...).
         basis_set (str): The basis set (e.g., '6-311++G(d,p)', 'aug-cc-pVTZ'...).
+        auxiliary_basis_set (str): The auxiliary basis set.
         fine (bool): Whether to use fine geometry optimization parameters.
         shift (str): A string representation alpha- and beta-spin orbitals shifts (molpro only).
         comments (str): Job comments (archived, not used).
@@ -169,7 +171,7 @@ class Job(object):
                  job_server_name=None, job_name=None, job_id=None, server=None, initial_time=None, occ=None,
                  max_job_time=120, scan_res=None, checkfile=None, number_of_radicals=None, conformers=None, radius=None,
                  directed_scan_type=None, directed_scans=None, directed_dihedrals=None, rotor_index=None, testing=False,
-                 cpu_cores=None):
+                 cpu_cores=None, auxiliary_basis_set=None, option=[]):
         if job_dict is not None:
             self.from_dict(job_dict)
         else:
@@ -185,6 +187,7 @@ class Job(object):
                 raise InputError('ess_settings must be specified')
             if multiplicity is None:
                 raise InputError('multiplicity must be specified')
+            self.auxiliary_basis_set = auxiliary_basis_set
             self.project = project
             self.project_directory = project_directory
             self.species_name = species_name
@@ -255,11 +258,12 @@ class Job(object):
         self.job_name = self.job_name if self.job_name is not None else self.job_type + '_' + self.job_server_name
 
         # determine the level of theory and software to use:
-        self.method, self.basis_set = '', ''
-        if '/' in self.level_of_theory:
-            splits = self.level_of_theory.split('/')
-            self.method = splits[0]
-            self.basis_set = '/'.join(splits[1:])  # there are two '/' symbols in a ff_param_fit job's l.o.t, keep both
+        self.method, self.basis_set, self.auxiliary_basis_set = '', '', ''
+        if ' ' in self.level_of_theory:  # assume there is auxiliary basis set
+            method_basis, self.auxiliary_basis_set = self.level_of_theory.split(' ', 1)
+            self.method, self.basis_set = method_basis.split('/', 1)
+        elif '/' in self.level_of_theory:
+            self.method, self.basis_set = self.level_of_theory.split('/', 1)
         else:  # this is a composite job
             self.method, self.basis_set = self.level_of_theory, ''
 
@@ -291,6 +295,7 @@ class Job(object):
         A helper function for dumping this object as a dictionary in a YAML file for restarting ARC.
         """
         job_dict = dict()
+        job_dict['auxiliary_basis_set'] = self.auxiliary_basis_set
         job_dict['project'] = self.project
         job_dict['project_directory'] = self.project_directory
         job_dict['species_name'] = self.species_name
@@ -364,6 +369,7 @@ class Job(object):
         A helper function for loading this object from a dictionary in a YAML file for restarting ARC
         """
         # mandatory attributes:
+        self.auxiliary_basis_set = job_dict['auxiliary_basis_set']
         self.project = job_dict['project']
         self.project_directory = job_dict['project_directory']
         self.initial_time = datetime.datetime.strptime(job_dict['initial_time'], '%Y-%m-%d %H:%M:%S') \
