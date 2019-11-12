@@ -4,7 +4,7 @@
 """
 parameters for input files:
 
-memory (in MB for gaussian, MW for molpro)
+memory (in MB for gaussian and orca, MW for molpro)
 method
 basis set
 slash is '', unless this is gaussian NOT running a composite method, in which case it is '/'
@@ -27,6 +27,17 @@ qchem:
     job_type_2: 'freq'.
     fine: '\n   GEOM_OPT_TOL_GRADIENT 15\n   GEOM_OPT_TOL_DISPLACEMENT 60\n   GEOM_OPT_TOL_ENERGY 5\n   XC_GRID SG-3'
     restricted: 'false' or 'true' for restricted / unrestricted
+
+orca:
+    job_type_1: 'SP', 'Opt', 'OptTS', 'Freq'
+    job_type_2: reserved for Opt + Freq
+    restricted: 'R' = closed-shell SCF, 'U' = spin unrestricted SCF, 'RO' = open-shell spin restricted SCF
+    auxiliary_basis: required for DLPNO calculations (speed up calculation)
+    memory: MB per core (must increase as system gets larger)
+    cpus: must be less than number of electrons pairs (default to min(heavy atoms, cpus limit))
+    settings: input blocks that enable detailed control over program
+    method_class: 'HF' for wavefunction methods (hf, mp, cc, dlpno ...). 'KS' for DFT methods
+    options: additional keywords to control job (e.g., TightSCF, NormalPNO ...)
 """
 
 input_files = {
@@ -44,6 +55,20 @@ name
 {scan}{scan_trsh}
 
 
+""",
+
+    'orca': """!{restricted}{method_class} {method} {basis} {auxiliary_basis} {options}
+!{job_type_1} 
+{job_type_2}
+%maxcore {memory}
+%pal # job parallelization settings
+nprocs {cpus}
+end
+{settings}
+
+* xyz {charge} {multiplicity}
+{xyz}
+*
 """,
 
     'qchem': """$molecule
