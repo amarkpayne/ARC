@@ -12,6 +12,7 @@ from arkane.exceptions import LogError
 from arkane.gaussian import GaussianLog
 from arkane.molpro import MolproLog
 from arkane.qchem import QChemLog
+from arkane.orca import OrcaLog
 from arkane.util import determine_qm_software
 
 from arc.common import get_logger
@@ -54,10 +55,31 @@ def parse_frequencies(path, software):
                 freqs = np.append(freqs, [float(line.split()[-1])])
             if 'Low' not in line and 'Vibration' in line and 'Wavenumber' in line:
                 read = True
+    elif software.lower() == 'orca':
+        with open(path, 'r') as f:
+            line = f.readline()
+            flag = False
+            while line:
+                if 'VIBRATIONAL FREQUENCIES' in line:
+                    i = 5
+                    while i:
+                        line = f.readline()
+                        i -= 1
+                    else:
+                        freqs = np.append(freqs, [float(line.split()[-2])])
+                        flag = True
+                if flag:
+                    if line.strip():
+                        freqs = np.append(freqs, [float(line.split()[-2])])
+                        line = f.readline()
+                    else:
+                        break
+                else:
+                    line = f.readline()
     else:
-        raise ParserError('parse_frequencies() can currently only parse Molpro, QChem and Gaussian files,'
-                          ' got {0}'.format(software))
-    logger.debug('Using parser.parse_frequencies. Determined frequencies are: {0}'.format(freqs))
+        raise ParserError(f'parse_frequencies() can currently only parse Orca, Molpro, QChem and Gaussian files,'
+                          f' got {software}')
+    logger.debug(f'Using parser.parse_frequencies. Determined frequencies are: {freqs}')
     return freqs
 
 
@@ -148,7 +170,7 @@ def parse_xyz_from_file(path):
     Parse xyz coordinated from:
     - .xyz: XYZ file
     - .gjf: Gaussian input file
-    - .out or .log: ESS output file (Gaussian, QChem, Molpro)
+    - .out or .log: ESS output file (Gaussian, QChem, Molpro, Orca)
     - other: Molpro or QChem input file
 
     Args:
@@ -255,8 +277,14 @@ def parse_dipole_moment(path):
                 splits = line.split()
                 dm_x, dm_y, dm_z = float(splits[-3]), float(splits[-2]), float(splits[-1])
                 dipole_moment = (dm_x ** 2 + dm_y ** 2 + dm_z ** 2) ** 0.5
+    elif isinstance(log, OrcaLog):
+        # example:
+        # Magnitude (Debye)      :      2.11328
+        for line in lines:
+            if 'Magnitude (Debye)' in line:
+                dipole_moment = float(line.split()[-1])
     else:
-        raise ParserError('Currently dipole moments can only be parsed from either Gaussian, Molpro, or QChem '
+        raise ParserError('Currently dipole moments can only be parsed from either Orca, Gaussian, Molpro, or QChem '
                           'optimization output files')
     if dipole_moment is None:
         raise ParserError('Could not parse the dipole moment')
