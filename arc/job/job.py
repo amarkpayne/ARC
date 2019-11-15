@@ -578,21 +578,25 @@ class Job(object):
         if self.software == 'gaussian' and '/' in self.level_of_theory:
             slash = '/'
 
-        if (self.multiplicity > 1 and '/' in self.level_of_theory) \
-                or (self.number_of_radicals is not None and self.number_of_radicals > 1):
+        # Determine HF/DFT restriction type
+        if (self.multiplicity > 1 and '/' in self.level_of_theory) or (self.number_of_radicals > 1):
             # don't add 'u' to composite jobs. Do add 'u' for bi-rad singlets if `number_of_radicals` > 1
-            if self.number_of_radicals is not None and self.number_of_radicals > 1:
+            if self.number_of_radicals > 1:
                 logger.info('Using an unrestricted method for species {0} which has {1} radicals and '
                             'multiplicity {2}'.format(self.species_name, self.number_of_radicals, self.multiplicity))
             if self.software == 'qchem':
                 restricted = 'True'  # In QChem this attribute is "unrestricted"
-            else:
+            elif self.software == 'gaussian':
                 restricted = 'u'
+            elif self.software == 'orca':
+                restricted = 'U'
         else:
             if self.software == 'qchem':
                 restricted = 'False'  # In QChem this attribute is "unrestricted"
-            else:
+            elif self.software == 'gaussian':
                 restricted = ''
+            elif self.software == 'orca':
+                restricted = 'R'
 
         job_type_1, job_type_2, fine = '', '', ''
 
@@ -616,6 +620,51 @@ wf,spin={spin},charge={charge};}}
 {job_type_2}
 ---;"""
 
+        # Software specific global settings
+        if self.software == 'orca':
+            # Orca options (not case sensitive)
+            orca_scf_convergence_thresholds = ['loosescf', 'sloppyscf', 'strongscf', 'normalscf', 'tightscf',
+                                               'verytightscf', 'extremescf']
+            orca_opt_convergence_thresholds = ['looseopt', 'normalopt', 'tightopt', 'verytightopt']
+            orca_dlpno_thresholds = ['loosepno', 'normalpno', 'tightpno']
+
+            orca_options_dict = {'scf_level': 'TightSCF'}
+            if self.job_option:
+                for option in self.job_option:
+                    if option.lower() in orca_scf_convergence_thresholds:
+                        orca_options_dict['scf_level'] = option.lower()
+                        logger.info(f'Using user-defined SCF convergence {option.lower()} for all Orca jobs.')
+
+            # Orca requires different settings to wavefunction methods and DFTs
+            # determine model chemistry type
+            model_chemistry_class = self.determine_model_chemistry_class()
+            if model_chemistry_class == 'dft':
+                method_class = 'KS'
+                # DFT grid must be the same for both opt and freq
+                orca_options_dict['dft_final_grid'] = 'NoFinalGrid'
+                if self.fine:
+                    orca_options_dict['dft_grid'] = 'Grid6'
+                else:
+                    orca_options_dict['dft_grid'] = 'Grid5'
+            elif model_chemistry_class == 'wavefunction':
+                method_class = 'HF'
+                if 'dlpno' in self.method.lower():
+                    orca_options_dict['dlpno_level'] = 'normalPNO'
+                    if self.job_option:
+                        for option in self.job_option:
+                            if option.lower() in orca_dlpno_thresholds:
+                                orca_options_dict['dlpno_level'] = option.lower()
+                                logger.info(f'Using user-defined DLPNO level {option.lower()} for all Orca jobs.')
+            else:
+                logger.info(f'Running {self.method} method in Orca.')
+        elif self.software == 'gaussian' and not self.trsh:
+            if self.level_of_theory[:2] == 'ro':
+                self.trsh = 'use=L506'
+            else:
+                # xqc will do qc (quadratic convergence) if the job fails w/o it, so use by default
+                self.trsh = 'scf=xqc'
+
+        # Job specific settings
         if self.job_type in ['conformer', 'opt']:
             if self.software == 'gaussian':
                 if self.is_ts:
@@ -650,6 +699,26 @@ wf,spin={spin},charge={charge};}}
                     job_type_1 = "\noptg, root=2, method=qsd, readhess, savexyz='geometry.xyz'"
                 else:
                     job_type_1 = "\noptg, savexyz='geometry.xyz'"
+            elif self.software == 'orca':
+                if self.fine():
+                    orca_options_dict['opt_level'] = 'TightOpt'
+                else:
+                    orca_options_dict['opt_level'] = 'NormalOpt'
+                if self.job_option:
+                    for option in self.job_option:
+                        if option.lower() in orca_opt_convergence_thresholds:
+                            orca_options_dict['opt_level'] = option.lower()
+                            logger.info(f'Using user-defined Orca optimization convergence level {option.lower()}.')
+                options = ' '.join(orca_options_dict.values())
+                if self.is_ts:
+                    job_type_1 = 'OptTS'
+                    settings = """
+%geom
+    Calc_Hess true # calculation of the exact Hessian before the first opt step
+end               
+"""
+                else:
+                    job_type_1 = 'Opt'
 
         elif self.job_type == 'orbitals' and self.software == 'qchem':
             if self.is_ts:
@@ -689,6 +758,15 @@ name
                 job_type_1 = 'freq'
             elif self.software == 'molpro':
                 job_type_1 = '\n{frequencies;\nthermo;\nprint,HESSIAN,thermo;}'
+            elif self.software == 'orca':
+                job_type_1 = 'Freq'
+                if self.job_option:
+                    for option in self.job_option:
+                        if option.lower() == 'numfreq':
+                            orca_options_dict['freq_type'] = 'NumFreq'
+                            logger.info(f'Using numeric frequency calculation in Orca. Notice that this job will be '
+                                        f'very time consuming.')
+                options = ' '.join(orca_options_dict.values())
 
         elif self.job_type == 'optfreq':
             if self.software == 'gaussian':
@@ -736,6 +814,31 @@ $end
                 else:
                     job_type_1 = "\noptg,savexyz='geometry.xyz"
                 job_type_2 = '\n{frequencies;\nthermo;\nprint,HESSIAN,thermo;}'
+            elif self.software == 'orca':
+                if self.is_ts:
+                    job_type_1 = 'OptTS'
+                    settings = """
+%geom
+    Calc_Hess true # calculation of the exact Hessian before the first opt step
+end               
+"""
+                else:
+                    job_type_1 = 'Opt'
+                job_type_2 = '!Freq'
+                if self.fine():
+                    orca_options_dict['opt_level'] = 'TightOpt'
+                else:
+                    orca_options_dict['opt_level'] = 'NormalOpt'
+                if self.job_option:
+                    for option in self.job_option:
+                        if option.lower() in orca_opt_convergence_thresholds:
+                            orca_options_dict['opt_level'] = option.lower()
+                            logger.info(f'Using user-defined Orca optimization convergence level {option.lower()}.')
+                        if option.lower() == 'numfreq':
+                            orca_options_dict['freq_type'] = 'NumFreq'
+                            logger.info(f'Using numeric frequency calculation in Orca. Notice that this job will be '
+                                        f'very time consuming.')
+                options = ' '.join(orca_options_dict.values())
 
         elif self.job_type == 'sp':
             if self.software == 'gaussian':
@@ -748,6 +851,8 @@ $end
                 job_type_1 = 'sp'
             elif self.software == 'molpro':
                 pass
+            elif self.software == 'orca':
+                job_type_1 = 'sp'
 
         elif self.job_type == 'composite':
             if self.software == 'gaussian':
@@ -978,6 +1083,15 @@ $end
             ssh.download_file(remote_file_path=remote_check_file_path, local_file_path=self.local_path_to_check_file)
             if not os.path.isfile(self.local_path_to_check_file):
                 logger.warning('Gaussian check file for {0} was not downloaded properly'.format(self.job_name))
+
+        # download Orca .hess hessian file generated by frequency calculations
+        # Hessian is useful when the user would like to project rotors
+        if self.software.lower() == 'orca':
+            if self.job_type == 'freq':
+                remote_hess_file_path = os.path.join(self.remote_path, 'input.hess')
+                ssh.download_file(remote_file_path=remote_hess_file_path, local_file_path=self.local_path_to_hess_file)
+                if not os.path.isfile(self.local_path_to_hess_file):
+                    logger.warning(f'Orca hessian file for {self.job_name} was not downloaded properly')
 
         # download Lennard_Jones data file
         if self.software.lower() == 'onedmin':
@@ -1323,6 +1437,12 @@ $end
                             raise JobError('Could not find the QChem software to run {0}/{1}'.format(
                                 self.method, self.basis_set))
                         self.software = 'qchem'
+                    elif 'dlpno' in self.method:
+                        # this is a DLPNO method, use Orca
+                        if 'orca' not in esss:
+                            raise JobError(f'Could not find the Orca software to run the DLPNO method {self.method}.\n'
+                                           f'ess_settings is:\n{self.ess_settings}')
+                        self.software = 'orca'
                 elif self.job_type == 'scan':
                     if 'wb97xd' in self.method:
                         if 'gaussian' not in esss:
@@ -1447,6 +1567,7 @@ $end
         self.local_path_to_orbitals_file = os.path.join(self.local_path, 'orbitals.fchk')
         self.local_path_to_lj_file = os.path.join(self.local_path, 'lj.dat')
         self.local_path_to_check_file = os.path.join(self.local_path, 'check.chk')
+        self.local_path_to_hess_file = os.path.join(self.local_path, 'input.hess')
 
         # parentheses don't play well in folder names:
         species_name_for_remote_path = self.species_name.replace('(', '_').replace(')', '_')
