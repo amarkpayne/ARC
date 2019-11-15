@@ -34,23 +34,25 @@ import string
 #    },
 # }
 servers = {
-    'server1': {
-        'cluster_soft': 'OGE',
-        'address': 'server1.host.edu',
-        'un': '<username>',
-        'key': 'path_to_rsa_key',
-    },
-    'server2': {
-        'cluster_soft': 'Slurm',
-        'address': 'server2.host.edu',
-        'un': '<username>',
-        'key': 'path_to_rsa_key',
-        'cpus': 48,  # number of cpu's per node, optional (default: 8)
-        'memory': 128,  # amount of memory per node in GB, optional (default: 16)
-    },
+    # 'server1': {
+    #     'cluster_soft': 'OGE',
+    #     'address': 'server1.host.edu',
+    #     'un': '<username>',
+    #     'key': 'path_to_rsa_key',
+    # },
+    # 'server2': {
+    #     'cluster_soft': 'Slurm',
+    #     'address': 'server2.host.edu',
+    #     'un': '<username>',
+    #     'key': 'path_to_rsa_key',
+    #     'cpus': 48,  # number of cpu's per node, optional (default: 8)
+    #     'memory': 128,  # amount of memory per node in GB, optional (default: 16)
+    # },
     'local': {
-        'cluster_soft': 'OGE',
-        'un': '<username>',
+        'cluster_soft': 'Slurm',
+        'un': 'ampayne',
+        'cpus': 8,
+        'memory': 16,  # Set this to the node max regardless of what you set for the job
     },
 }
 
@@ -58,10 +60,10 @@ servers = {
 # An ordered list of servers indicates priority
 # Keeping this dictionary empty will cause ARC to scan for software on the servers defined above
 global_ess_settings = {
-    'gaussian': ['local', 'server2'],
-    'molpro': 'server2',
-    'qchem': 'server1',
-    'onedmin': 'server1',
+    # 'gaussian': ['local', 'server2'],
+    # 'molpro': 'server2',
+    'qchem': 'local',
+    # 'onedmin': 'server1',
     'orca': 'local',
 }
 
@@ -77,15 +79,13 @@ default_job_types = {'conformers': True,      # defaults to True if not specifie
                      'bde': False,            # defaults to False if not specified
                      }
 
-supported_ess = ['gaussian', 'molpro', 'qchem', 'orca']  # use lowercase when adding new ones
+supported_ess = ['qchem', 'orca']  # use lowercase when adding new ones
 
 # List here (complete or partial) phrases of methods or basis sets you'd like to associate to specific ESS
 # Avoid ascribing the same phrase to more than one software, this may cause undeterministic assignment of software
 # Format is levels_ess = {ess: ['phrase1', 'phrase2'], ess2: ['phrase3', 'phrase3']}
 levels_ess = {
-    'gaussian': ['apfd', 'b3lyp', 'm062x'],
-    'molpro': ['ccsd', 'cisd', 'vpz'],
-    'qchem': ['m06-2x'],
+    'qchem': ['wb97xd'],
     'orca': ['dlpno'],
 }
 
