@@ -140,6 +140,7 @@ class Job(object):
         job_name (str): Job's name for internal usage (e.g., 'opt_a103').
         job_id (int): The job's ID determined by the server.
         job_num (int): Used as the entry number in the database, as well as the job name on the server.
+        job_option (list): Additional options to control the execution of a job (e.g., iop in Gaussian, PNO in Orca)
         local_path (str): Local path to job's folder.
         local_path_to_output_file (str): The local path to the output.out file.
         local_path_to_orbitals_file (str): The local path to the orbitals.fchk file (only for orbitals jobs).
@@ -171,7 +172,7 @@ class Job(object):
                  job_server_name=None, job_name=None, job_id=None, server=None, initial_time=None, occ=None,
                  max_job_time=120, scan_res=None, checkfile=None, number_of_radicals=None, conformers=None, radius=None,
                  directed_scan_type=None, directed_scans=None, directed_dihedrals=None, rotor_index=None, testing=False,
-                 cpu_cores=None, auxiliary_basis_set=None, option=[]):
+                 cpu_cores=None, auxiliary_basis_set=None, job_option=None):
         if job_dict is not None:
             self.from_dict(job_dict)
         else:
@@ -187,7 +188,7 @@ class Job(object):
                 raise InputError('ess_settings must be specified')
             if multiplicity is None:
                 raise InputError('multiplicity must be specified')
-            self.auxiliary_basis_set = auxiliary_basis_set
+            self.job_option = job_option if job_option is not None else list()
             self.project = project
             self.project_directory = project_directory
             self.species_name = species_name
@@ -295,7 +296,7 @@ class Job(object):
         A helper function for dumping this object as a dictionary in a YAML file for restarting ARC.
         """
         job_dict = dict()
-        job_dict['auxiliary_basis_set'] = self.auxiliary_basis_set
+        job_dict['job_option'] = self.job_option
         job_dict['project'] = self.project
         job_dict['project_directory'] = self.project_directory
         job_dict['species_name'] = self.species_name
@@ -369,7 +370,7 @@ class Job(object):
         A helper function for loading this object from a dictionary in a YAML file for restarting ARC
         """
         # mandatory attributes:
-        self.auxiliary_basis_set = job_dict['auxiliary_basis_set']
+        self.job_option = job_dict['job_option']
         self.project = job_dict['project']
         self.project_directory = job_dict['project_directory']
         self.initial_time = datetime.datetime.strptime(job_dict['initial_time'], '%Y-%m-%d %H:%M:%S') \
