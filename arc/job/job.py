@@ -993,6 +993,28 @@ $end
                 logger.warning('Could not download Molpro log file for {0} '
                                '(this is not the output file)'.format(self.job_name))
 
+    def determine_model_chemistry_class(self):
+        """
+        Determine the type of model chemistry.
+
+        Returns:
+            model_chemistry_class (str): type of model chemistry.
+        """
+        given_method = self.method.lower()
+        wave_function_methods = ['cc', 'ci', 'mp2', 'mp3', 'cp', 'cep', 'nevpt', 'dmrg', 'ri', 'cas', 'ic', 'mr']
+        semiempirical_methods = ['am', 'pm', 'zindo', 'mndo', 'xtb']
+        force_field_methods = ['amber', 'mmff', 'dreiding', 'uff', 'qmdff', 'gfn']
+        if any(method in given_method for method in wave_function_methods):
+            model_chemistry_class = 'wavefunction'
+        elif any(method in given_method for method in semiempirical_methods):
+            model_chemistry_class = 'semiempirical'
+        elif any(method in given_method for method in force_field_methods):
+            model_chemistry_class = 'force_field'
+        else:
+            logger.info(f'Assuming {given_method} is a DFT method.')
+            model_chemistry_class = 'dft'
+        return model_chemistry_class
+
     def run(self):
         """
         Execute the Job.
