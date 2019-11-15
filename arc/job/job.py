@@ -563,6 +563,10 @@ class Job(object):
         Write a software-specific, job-specific input file.
         Save the file locally and also upload it to the server.
         """
+        # Initialize variables
+        orca_options_dict, orca_opt_convergence_thresholds, restricted, settings, options, method_class \
+            = (None for _ in range(6))
+
         if self.initial_trsh and not self.trsh:
             # use the default trshs defined by the user in the initial_trsh dictionary
             if self.software in self.initial_trsh:
@@ -733,7 +737,7 @@ $end
                     job_type_1 = "\noptg,savexyz='geometry.xyz"
                 job_type_2 = '\n{frequencies;\nthermo;\nprint,HESSIAN,thermo;}'
 
-        if self.job_type == 'sp':
+        elif self.job_type == 'sp':
             if self.software == 'gaussian':
                 job_type_1 = 'scf=(tight, direct) integral=(grid=ultrafine, Acc2E=12)'
                 if self.checkfile is not None:
@@ -745,7 +749,7 @@ $end
             elif self.software == 'molpro':
                 pass
 
-        if self.job_type == 'composite':
+        elif self.job_type == 'composite':
             if self.software == 'gaussian':
                 if self.fine:
                     fine = 'scf=(tight, direct) integral=(grid=ultrafine, Acc2E=12)'
@@ -764,7 +768,7 @@ $end
             else:
                 raise JobError('Currently composite methods are only supported in gaussian')
 
-        if self.job_type == 'scan':
+        elif self.job_type == 'scan':
             if not divmod(360, self.scan_res):
                 raise JobError('Scan job got an illegal rotor scan resolution of {0}'.format(self.scan_res))
             scan = ' '.join([str(num) for num in self.scan])
@@ -841,14 +845,7 @@ $end
                                  'Got: {0} using the {1} level of theory'.format(
                                   self.software, self.method + '/' + self.basis_set))
 
-        if self.software == 'gaussian' and not self.trsh:
-            if self.level_of_theory[:2] == 'ro':
-                self.trsh = 'use=L506'
-            else:
-                # xqc will do qc (quadratic convergence) if the job fails w/o it, so use by default
-                self.trsh = 'scf=xqc'
-
-        if self.job_type == 'irc':  # TODO
+        elif self.job_type == 'irc':  # TODO
             if self.fine:
                 # Note that the Acc2E argument is not available in Gaussian03
                 fine = 'scf=(direct) integral=(grid=ultrafine, Acc2E=12)'
@@ -858,7 +855,7 @@ $end
             else:
                 job_type_1 += ' guess=mix'
 
-        if self.job_type == 'gsm':  # TODO
+        elif self.job_type == 'gsm':  # TODO
             pass
 
         if 'mrci' in self.method:
@@ -882,11 +879,14 @@ $end
                                                multiplicity=self.multiplicity, spin=self.spin, xyz=xyz_to_str(self.xyz),
                                                job_type_1=job_type_1, job_type_2=job_type_2, scan=scan_string,
                                                restricted=restricted, fine=fine, shift=self.shift, trsh=self.trsh,
-                                               scan_trsh=self.scan_trsh, bath=self.bath_gas, constraint=constraint) \
+                                               scan_trsh=self.scan_trsh, bath=self.bath_gas, constraint=constraint,
+                                               settings=settings, options=options, method_class=method_class,
+                                               auxiliary_basis=self.auxiliary_basis_set) \
                     if self.input is not None else None
             except KeyError:
                 logger.error('Could not interpret all input file keys in\n{0}'.format(self.input))
                 raise
+
         if not self.testing:
             if not os.path.exists(self.local_path):
                 os.makedirs(self.local_path)
@@ -1107,6 +1107,7 @@ $end
         """
         Download the additional information of stdout and stderr from the server.
         """
+        ssh = None
         lines1, lines2 = list(), list()
         content = ''
         cluster_soft = servers[self.server]['cluster_soft'].lower()
@@ -1366,16 +1367,17 @@ $end
                     self.software = 'gaussian'
             if self.software is None:
                 # if still no software was determined, just try by order, if exists
-                logger.error('job_num: {0}'.format(self.job_num))
-                logger.error('ess_trsh_methods: {0}'.format(self.ess_trsh_methods))
-                logger.error('trsh: {0}'.format(self.trsh))
-                logger.error('job_type: {0}'.format(self.job_type))
-                logger.error('job_name: {0}'.format(self.job_name))
-                logger.error('level_of_theory: {0}'.format(self.level_of_theory))
-                logger.error('software: {0}'.format(self.software))
-                logger.error('method: {0}'.format(self.method))
-                logger.error('basis_set: {0}'.format(self.basis_set))
-                logger.error('Could not determine software for job {0}'.format(self.job_name))
+                logger.error(f'job_num: {self.job_num}')
+                logger.error(f'ess_trsh_methods: {self.ess_trsh_methods}')
+                logger.error(f'trsh: {self.trsh}')
+                logger.error(f'job_type: {self.job_type}')
+                logger.error(f'job_name: {self.job_name}')
+                logger.error(f'level_of_theory: {self.level_of_theory}')
+                logger.error(f'software: {self.software}')
+                logger.error(f'method: {self.method}')
+                logger.error(f'basis_set: {self.basis_set}')
+                logger.error(f'auxiliary_basis_set: {self.auxiliary_basis_set}')
+                logger.error(f'Could not determine software for job {self.job_name}')
                 if 'gaussian' in esss:
                     logger.error('Setting it to Gaussian')
                     self.software = 'gaussian'
