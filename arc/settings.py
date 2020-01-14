@@ -34,23 +34,11 @@ import string
 #    },
 # }
 servers = {
-    'server1': {
-        'cluster_soft': 'OGE',
-        'address': 'server1.host.edu',
-        'un': '<username>',
-        'key': 'path_to_rsa_key',
-    },
-    'server2': {
-        'cluster_soft': 'Slurm',
-        'address': 'server2.host.edu',
-        'un': '<username>',
-        'key': 'path_to_rsa_key',
-        'cpus': 48,  # number of cpu's per node, optional (default: 8)
-        'memory': 128,  # amount of memory per node in GB, optional (default: 16)
-    },
     'local': {
         'cluster_soft': 'OGE',
-        'un': '<username>',
+        'un': 'ampayne',
+	'cpus': 8,
+	'memory': 5,
     },
 }
 
@@ -58,28 +46,24 @@ servers = {
 # An ordered list of servers indicates priority
 # Keeping this dictionary empty will cause ARC to scan for software on the servers defined above
 global_ess_settings = {
-    'gaussian': ['local', 'server2'],
-    'molpro': 'server2',
-    'onedmin': 'server1',
-    'orca': 'local',
-    'qchem': 'server1',
-    'terachem': 'server1',
+    'gaussian': 'local',
+    'qchem': 'local',
 }
 
 # List here job types to execute by default
-default_job_types = {'conformers': True,      # defaults to True if not specified
+default_job_types = {'conformers': False,      # defaults to True if not specified
                      'opt': True,             # defaults to True if not specified
                      'fine_grid': True,       # defaults to True if not specified
                      'freq': True,            # defaults to True if not specified
-                     'sp': True,              # defaults to True if not specified
-                     'rotors': True,          # defaults to True if not specified
-                     'irc': True,             # defaults to True if not specified
+                     'sp': False,              # defaults to True if not specified
+                     'rotors': False,       # defaults to True if not specified
+                     'irc': False,             # defaults to True if not specified
                      'orbitals': False,       # defaults to False if not specified
                      'lennard_jones': False,  # defaults to False if not specified
                      'bde': False,            # defaults to False if not specified
                      }
 
-supported_ess = ['gaussian', 'molpro', 'orca', 'qchem', 'terachem']  # use lowercase when adding new ones
+supported_ess = ['gaussian', 'qchem']  # use lowercase when adding new ones
 
 # List here (complete or partial) phrases of methods or basis sets you'd like to associate to specific ESS
 # Avoid ascribing the same phrase to more than one software, this may cause undeterministic assignment of software
