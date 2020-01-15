@@ -230,7 +230,7 @@ class Processor(object):
                     species_for_thermo_lib.append(species)
                 try:
                     species.rmg_thermo = self.rmgdb.thermo.get_thermo_data(species.rmg_species)
-                except (ValueError, AttributeError) as e:
+                except Exception as e:
                     logger.info('Could not retrieve RMG thermo for species {0}, possibly due to missing 2D structure '
                                 '(bond orders). Not including this species in the parity plots.'
                                 '\nGot: {1}'.format(species.label, e))
