@@ -897,10 +897,8 @@ class ARC(object):
         """
         if self.freq_scale_factor is None:
             # the user did not specify a scaling factor, see if Arkane has it
-            if not self.composite_method:
-                level = self.freq_level['method'] + '/' + self.freq_level['basis']
-            else:
-                level = self.composite_method
+            # level = self.freq_level if not self.composite_method else self.composite_method
+            level = self.model_chemistry
             freq_scale_factor = assign_frequency_scale_factor(level)
             if freq_scale_factor != 1:
                 # Arkane has this harmonic frequencies scaling factor (if not found, the factor is set to exactly 1)
