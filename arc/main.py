@@ -21,6 +21,7 @@ from distutils.spawn import find_executable
 from IPython.display import display
 
 from arkane.encorr.corr import assign_frequency_scale_factor
+from arkane.encorr.data import pbac
 from rmgpy.reaction import Reaction
 from rmgpy.species import Species
 
@@ -711,16 +712,10 @@ class ARC(object):
     def determine_model_chemistry(self):
         """
         Determine the model_chemistry to be used in Arkane.
-
-        Todo:
-            * Determine whether the model chemistry exists in Arkane automatically instead of hard coding
         """
         if self.model_chemistry:
             self.model_chemistry = self.model_chemistry.lower()
-            if self.model_chemistry.split('//')[0] not in [
-                    'cbs-qb3', 'cbs-qb3-paraskevas', 'ccsd(t)-f12/cc-pvdz-f12', 'ccsd(t)-f12/cc-pvtz-f12',
-                    'ccsd(t)-f12/cc-pvqz-f12', 'b3lyp/cbsb7', 'b3lyp/6-311g(2d,d,p)', 'b3lyp/6-311+g(3df,2p)',
-                    'b3lyp/6-31g(d,p)']:
+            if self.model_chemistry.split('//')[0] not in pbac:
                 logger.warning('No bond additivity corrections (BAC) are available in Arkane for "model chemistry"'
                                ' {0}. As a result, thermodynamic parameters are expected to be inaccurate. Make sure'
                                ' that atom energy corrections (AEC) were supplied or are available in Arkane to avoid'
