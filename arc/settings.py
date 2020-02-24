@@ -71,7 +71,7 @@ supported_ess = ['gaussian', 'qchem']  # use lowercase when adding new ones
 levels_ess = {
     'gaussian': ['apfd', 'b3lyp', 'm062x'],
     'molpro': ['ccsd', 'cisd', 'vpz'],
-    'qchem': ['m06-2x'],
+    'qchem': ['m06-2x', 'wb97m-v'],
     'orca': ['dlpno'],
     'terachem': ['pbe'],
 }
