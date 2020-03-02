@@ -707,6 +707,8 @@ class ARC(object):
                 logger.info('\n')
         return status_dict
 
+        return status_dict
+
     def determine_model_chemistry(self):
         """
         Determine the model_chemistry to be used in Arkane.
