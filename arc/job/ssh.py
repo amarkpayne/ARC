@@ -89,7 +89,7 @@ class SSHClient(object):
             raise InputError(f'Cannot upload a non-existing file. '
                              f'Check why file in path {local_file_path} is missing.')
         sftp, ssh = self.connect()
-        i, max_times_to_try = 1, 30
+        i, max_times_to_try = 1, 3
         success = False
         sleep_time = 10  # seconds
         while i < max_times_to_try:

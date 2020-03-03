@@ -44,7 +44,7 @@ def execute_command(command, shell=True, no_fail=False):
 
     if not isinstance(command, list) and not shell:
         command = [command]
-    i, max_times_to_try = 1, 30
+    i, max_times_to_try = 1, 3
     sleep_time = 60  # seconds
     while i < max_times_to_try:
         try:
