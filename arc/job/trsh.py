@@ -639,13 +639,13 @@ def trsh_ess_job(label: str,
             ess_trsh_methods.append('int=(Acc2E=14)')
             trsh_keyword = 'int=(Acc2E=14)'
         # suggest spwaning a cbs-qb3 job if there are not many heavy atoms
-        elif 'cbs-qb3' not in ess_trsh_methods and level_of_theory_dict['method'] != 'cbs-qb3' \
-                and 'scan' not in job_type and num_heavy_atoms <= 10:
-            # try running CBS-QB3, which is relatively robust.
-            logger.info(f'Troubleshooting {job_type} job in {software} for {label} using CBS-QB3')
-            ess_trsh_methods.append('cbs-qb3')
-            level_of_theory_dict['method'] = 'cbs-qb3'
-            job_type = 'composite'
+        # elif 'cbs-qb3' not in ess_trsh_methods and level_of_theory_dict['method'] != 'cbs-qb3' \
+        #        and 'scan' not in job_type and num_heavy_atoms <= 10:
+        #    # try running CBS-QB3, which is relatively robust.
+        #    logger.info(f'Troubleshooting {job_type} job in {software} for {label} using CBS-QB3')
+        #    ess_trsh_methods.append('cbs-qb3')
+        #    level_of_theory_dict['method'] = 'cbs-qb3'
+        #    job_type = 'composite'
         elif 'Memory' in job_status['keywords'] and 'memory' not in ess_trsh_methods:
             # Increase memory allocation
             max_mem = servers[server].get('memory', 128)  # Node memory in GB, defaults to 128 if not specified
@@ -653,24 +653,24 @@ def trsh_ess_job(label: str,
             logger.info(f'Troubleshooting {job_type} job in {software} for {label} using more memory: {memory} GB '
                         f'instead of {memory_gb} GB')
             ess_trsh_methods.append('memory')
-        elif level_of_theory_dict['method'] != 'cbs-qb3' and 'scf=(qc,nosymm) & CBS-QB3' not in ess_trsh_methods:
-            # try both qc and nosymm with CBS-QB3
-            logger.info(f'Troubleshooting {job_type} job in {software} for {label} using scf=(qc,nosymm) with CBS-QB3')
-            ess_trsh_methods.append('scf=(qc,nosymm) & CBS-QB3')
-            level_of_theory_dict['method'] = 'cbs-qb3'
-            trsh_keyword = 'scf=(qc,nosymm)'
-        elif 'qchem' not in ess_trsh_methods and job_type != 'composite' and \
-                (available_ess is None or 'qchem' in [ess.lower() for ess in available_ess]):
-            # Try QChem
-            logger.info(f'Troubleshooting {job_type} job using qchem instead of {software} for {label}')
-            ess_trsh_methods.append('qchem')
-            software = 'qchem'
-        elif 'molpro' not in ess_trsh_methods and job_type not in ['composite', 'scan'] \
-                and (available_ess is None or 'molpro' in [ess.lower() for ess in available_ess]):
-            # Try molpro
-            logger.info(f'Troubleshooting {job_type} job using molpro instead of {software} for {label}')
-            ess_trsh_methods.append('molpro')
-            software = 'molpro'
+        # elif level_of_theory_dict['method'] != 'cbs-qb3' and 'scf=(qc,nosymm) & CBS-QB3' not in ess_trsh_methods:
+        #    # try both qc and nosymm with CBS-QB3
+        #    logger.info(f'Troubleshooting {job_type} job in {software} for {label} using scf=(qc,nosymm) with CBS-QB3')
+        #    ess_trsh_methods.append('scf=(qc,nosymm) & CBS-QB3')
+        #    level_of_theory_dict['method'] = 'cbs-qb3'
+        #    trsh_keyword = 'scf=(qc,nosymm)'
+        # elif 'qchem' not in ess_trsh_methods and job_type != 'composite' and \
+        #        (available_ess is None or 'qchem' in [ess.lower() for ess in available_ess]):
+        #    # Try QChem
+        #    logger.info(f'Troubleshooting {job_type} job using qchem instead of {software} for {label}')
+        #    ess_trsh_methods.append('qchem')
+        #    software = 'qchem'
+        # elif 'molpro' not in ess_trsh_methods and job_type not in ['composite', 'scan'] \
+        #        and (available_ess is None or 'molpro' in [ess.lower() for ess in available_ess]):
+        #    # Try molpro
+        #    logger.info(f'Troubleshooting {job_type} job using molpro instead of {software} for {label}')
+        #    ess_trsh_methods.append('molpro')
+        #    software = 'molpro'
         else:
             couldnt_trsh = True
 
