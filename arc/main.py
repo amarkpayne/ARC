@@ -592,7 +592,7 @@ class ARC(object):
                                    max_job_time=self.max_job_time, allow_nonisomorphic_2d=self.allow_nonisomorphic_2d,
                                    memory=self.memory, adaptive_levels=self.adaptive_levels,
                                    n_confs=self.n_confs, e_confs=self.e_confs, dont_gen_confs=self.dont_gen_confs,
-                                   fine_only=self.fine_only)
+                                   fine_only=self.fine_only, main_arc_object=self)
 
         save_yaml_file(path=os.path.join(self.project_directory, 'output', 'status.yml'), content=self.scheduler.output)
 

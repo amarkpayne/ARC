@@ -53,6 +53,7 @@ from arc.settings import default_job_settings, default_job_types, rotor_scan_res
 import arc.rmgdb as rmgdb
 import arc.species.conformers as conformers  # import after importing plotter to avoid circular import
 from arc.species.vectors import get_angle, calculate_dihedral_angle
+from arc.processor import process_arc_project
 
 logger = get_logger()
 
@@ -234,6 +235,7 @@ class Scheduler(object):
                  n_confs: int = 10,
                  e_confs: float = 5,
                  fine_only: bool = False,
+                 main_arc_object=None,
                  ) -> None:
         self.rmg_database = rmg_database
         self.restart_dict = restart_dict
@@ -258,6 +260,7 @@ class Scheduler(object):
         self.job_types = job_types if job_types is not None else default_job_types
         self.fine_only = fine_only
         self.output = dict()
+        self.main_arc_object = main_arc_object
 
         self.species_dict = dict()
         for species in self.species_list:
@@ -684,7 +687,7 @@ class Scheduler(object):
 
                 if not len(job_list) and not (self.species_dict[label].is_ts
                                               and not self.species_dict[label].ts_conf_spawned):
-                    self.check_all_done(label)
+                    self.check_all_done(label, self.main_arc_object)
                     if not self.running_jobs[label]:
                         # delete the label only if it represents an empty dictionary
                         del self.running_jobs[label]
@@ -2456,7 +2459,7 @@ class Scheduler(object):
                 self.species_dict[label].recent_md_conformer[2] + 2, ordinal, label))
             self.spawn_md_jobs(label, prev_conf_list=conf_list)
 
-    def check_all_done(self, label):
+    def check_all_done(self, label, main_arc):
         """
         Check that we have all required data for the species/TS.
 
@@ -2476,6 +2479,29 @@ class Scheduler(object):
                 break
         if all_converged:
             self.output[label]['convergence'] = True
+            try:
+                sp_level = main_arc.model_chemistry.split('//')[0] \
+                    if '//' in main_arc.model_chemistry else main_arc.model_chemistry
+                process_arc_project(statmech_adapter=main_arc.statmech_adapter.lower(),
+                                    project=main_arc.project,
+                                    project_directory=main_arc.project_directory,
+                                    species_dict={label: self.species_dict[label]},
+                                    reactions=[],
+                                    output_dict=self.output,
+                                    use_bac=main_arc.use_bac,
+                                    sp_level=sp_level,
+                                    compute_thermo=main_arc.compute_thermo,
+                                    compute_rates=main_arc.compute_rates,
+                                    compute_transport=main_arc.compute_transport,
+                                    T_min=main_arc.T_min,
+                                    T_max=main_arc.T_max,
+                                    T_count=main_arc.T_count or 50,
+                                    lib_long_desc=main_arc.lib_long_desc,
+                                    rmg_database=main_arc.rmg_database,
+                                    compare_to_rmg=main_arc.compare_to_rmg)
+            except Exception as e:
+                print(e)
+
             if self.species_dict[label].is_ts:
                 self.species_dict[label].make_ts_report()
                 logger.info(self.species_dict[label].ts_report + '\n')
