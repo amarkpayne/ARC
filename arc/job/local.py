@@ -45,14 +45,14 @@ def execute_command(command, shell=True, no_fail=False):
     if not isinstance(command, list) and not shell:
         command = [command]
     i, max_times_to_try = 1, 3
-    sleep_time = 60  # seconds
+    sleep_time = 3  # seconds
     while i < max_times_to_try:
         try:
             stdout = subprocess.check_output(command, shell=shell)
             return _format_command_stdout(stdout), ''
         except subprocess.CalledProcessError as e:
             error = e  # Store the error so we can raise the SettingsError if need be
-            if no_fail:
+            if no_fail or 'qdel' in command:
                 _output_command_error_message(command, e, logger.warning)
                 return False
             else:
