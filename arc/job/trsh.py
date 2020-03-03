@@ -909,7 +909,7 @@ def trsh_job_on_server(server: str,
     # delete current server run
     command = delete_command[servers[server]['cluster_soft']] + ' ' + str(job_id)
     if server == 'local':
-        execute_command(command)
+        execute_command(command, no_fail=True)
         return None, True
     else:
         ssh = SSHClient(server)
