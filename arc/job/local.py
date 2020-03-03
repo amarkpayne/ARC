@@ -14,6 +14,8 @@ import shutil
 import subprocess
 import time
 
+from filelock import FileLock
+
 from arc.common import get_logger
 from arc.exceptions import SettingsError
 from arc.job.ssh import check_job_status_in_stdout
@@ -47,21 +49,24 @@ def execute_command(command, shell=True, no_fail=False):
     i, max_times_to_try = 1, 3
     sleep_time = 3  # seconds
     while i < max_times_to_try:
-        try:
-            stdout = subprocess.check_output(command, shell=shell)
-            return _format_command_stdout(stdout), ''
-        except subprocess.CalledProcessError as e:
-            error = e  # Store the error so we can raise the SettingsError if need be
-            if no_fail or 'qdel' in command:
-                _output_command_error_message(command, e, logger.warning)
-                return False
-            else:
-                _output_command_error_message(command, e, logger.error)
-                logger.error(f'ARC is sleeping for {sleep_time * i} seconds before re-trying,'
-                             f' please check if this is a server issue by executing the command manually on server.')
-                logger.info('ZZZZZ..... ZZZZZ.....')
-                time.sleep(sleep_time * i)  # in seconds
-                i += 1
+        lock = FileLock('command_file_lock.lock')
+        with lock:
+            time.sleep(2)
+            try:
+                stdout = subprocess.check_output(command, shell=shell)
+                return _format_command_stdout(stdout), ''
+            except subprocess.CalledProcessError as e:
+                error = e  # Store the error so we can raise the SettingsError if need be
+                if no_fail or 'qdel' in command:
+                    _output_command_error_message(command, e, logger.warning)
+                    return False
+                else:
+                    _output_command_error_message(command, e, logger.error)
+                    logger.error(f'ARC is sleeping for {sleep_time * i} seconds before re-trying,'
+                                 f' please check if this is a server issue by executing the command manually on server.')
+                    logger.info('ZZZZZ..... ZZZZZ.....')
+                    time.sleep(sleep_time * i)  # in seconds
+                    i += 1
 
     # If not success
     raise SettingsError(f'The command "{command}" is erroneous, got: \n{error}'
