@@ -59,7 +59,7 @@ name
 
 """,
 
-    'orca': """!{restricted}{method_class} {method} {basis} {auxiliary_basis} {job_options_keywords} {shortcut_keywords}
+    'orca': """!{restricted}{method_class} {method} {basis} {auxiliary_basis} {job_options_keywords} TightSCF tightPNO {shortcut_keywords}
 ! NRSCF # using Newton–Raphson SCF algorithm 
 !{job_type_1} 
 {job_type_2}
