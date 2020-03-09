@@ -38,7 +38,7 @@ servers = {
         'cluster_soft': 'OGE',
         'un': 'ampayne',
 	'cpus': 8,
-	'memory': 5,
+	'memory': 14,
     },
 }
 
@@ -47,6 +47,7 @@ servers = {
 # Keeping this dictionary empty will cause ARC to scan for software on the servers defined above
 global_ess_settings = {
     'gaussian': 'local',
+    'orca': 'local',
     'qchem': 'local',
 }
 
@@ -63,7 +64,7 @@ default_job_types = {'conformers': False,      # defaults to True if not specifi
                      'bde': False,            # defaults to False if not specified
                      }
 
-supported_ess = ['gaussian', 'qchem']  # use lowercase when adding new ones
+supported_ess = ['gaussian', 'qchem', 'orca']  # use lowercase when adding new ones
 
 # List here (complete or partial) phrases of methods or basis sets you'd like to associate to specific ESS
 # Avoid ascribing the same phrase to more than one software, this may cause undeterministic assignment of software
