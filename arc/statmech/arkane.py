@@ -411,6 +411,7 @@ def clean_output_directory(species_path: str,
     species_yaml_base_path = os.path.join(species_path, 'arkane', 'species')
     if os.path.exists(species_yaml_base_path):
         species_yaml_files = os.listdir(species_yaml_base_path)
+        print(f'These are the output directory file in {species_yaml_base_path}: {species_yaml_files}')
         if species_yaml_files:
             for yml_file in species_yaml_files:
                 if '.yml' in yml_file:
