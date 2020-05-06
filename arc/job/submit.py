@@ -417,5 +417,30 @@ cp * $SubmitDir/
 rm -rf $WorkDir
 
 """,
+    },
+
+    'local': {
+        'orca': """#!/bin/bash -l
+#SBATCH -J {name}
+#SBATCH -n {cpus}
+#SBATCH --time={t_max}
+#SBATCH --mem-per-cpu={memory}
+
+export PATH=/home/gridsan/ampayne/qm/orca:/home/gridsan/ampayne/qm/ompi-3.1.4/bin/:$PATH
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/gridsan/ampayne/qm/ompi-3.1.4/lib:/home/gridsan/ampayne/qm/ompi-3.1.4/etc/
+
+echo "============================================================"
+echo "Job ID : $SLURM_JOB_ID"
+echo "Job Name : $SLURM_JOB_NAME"
+echo "Starting on : $(date)"
+echo "Running on node : $SLURMD_NODENAME"
+echo "Current directory : $(pwd)"
+echo "============================================================"
+
+
+# Run the Orca job
+/home/gridsan/ampayne/qm/orca/orca input.in > input.log
+
+""",
     }
 }
