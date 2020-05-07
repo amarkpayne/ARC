@@ -2482,6 +2482,7 @@ class Scheduler(object):
             try:
                 sp_level = main_arc.model_chemistry.split('//')[0] \
                     if '//' in main_arc.model_chemistry else main_arc.model_chemistry
+                print(f'Trying to process species {label} by itself now that it is ready')
                 process_arc_project(statmech_adapter=main_arc.statmech_adapter.lower(),
                                     project=main_arc.project,
                                     project_directory=main_arc.project_directory,
@@ -2498,7 +2499,8 @@ class Scheduler(object):
                                     T_count=main_arc.T_count or 50,
                                     lib_long_desc=main_arc.lib_long_desc,
                                     rmg_database=main_arc.rmg_database,
-                                    compare_to_rmg=main_arc.compare_to_rmg)
+                                    compare_to_rmg=main_arc.compare_to_rmg,
+                                    previous_job_paths=self.main_arc_object.previous_job_paths)
             except Exception as e:
                 print(e)
 
