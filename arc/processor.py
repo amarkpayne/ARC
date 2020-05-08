@@ -186,10 +186,13 @@ def process_arc_project(statmech_adapter: str,
                     and species not in unconverged_species:
                 unconverged_species.append(species)
         if species_for_thermo_lib:
-            plotter.save_thermo_lib(species_list=species_for_thermo_lib,
-                                    path=libraries_path,
-                                    name=project,
-                                    lib_long_desc=lib_long_desc)
+            try:
+                plotter.save_thermo_lib(species_list=species_for_thermo_lib,
+                                        path=libraries_path,
+                                        name=project,
+                                        lib_long_desc=lib_long_desc)
+            except Exception:
+                pass
 
     # 3. Transport
     if compute_transport:
